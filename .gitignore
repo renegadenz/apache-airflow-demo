@@ -1,0 +1,17 @@
+# Ignore Airflow logs and temporary files
+/logs/*
+!/.gitkeep
+
+# Ignore Docker volumes
+*.log
+*.pid
+*.db
+*.sqlite
+
+# Ignore virtual environment
+/venv/
+/__pycache__/
+*.pyc
+
+# Ignore .env files (if storing environment variables)
+.env
