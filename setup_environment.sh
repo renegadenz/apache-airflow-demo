@@ -6,6 +6,10 @@ DAGS_DIR="${PROJECT_DIR}/dags"
 LOGS_DIR="${PROJECT_DIR}/logs"
 DOCKER_COMPOSE_FILE="${PROJECT_DIR}/docker-compose.yml"
 
+# Airflow default username and password
+AIRFLOW_USER="airflow"
+AIRFLOW_PASSWORD="airflow"
+
 # Ensure the dags and logs directories exist
 ensure_directories() {
     echo "Ensuring required directories exist..."
@@ -50,10 +54,27 @@ configure_airflow() {
     fi
 }
 
+# Create a default Airflow user
+create_airflow_user() {
+    echo "Creating Airflow user with username '$AIRFLOW_USER' and password '$AIRFLOW_PASSWORD'..."
+
+    # Run the airflow CLI to create the user
+    docker-compose exec airflow-webserver airflow users create \
+        --username "$AIRFLOW_USER" \
+        --firstname "Airflow" \
+        --lastname "Admin" \
+        --role Admin \
+        --email "airflow@example.com" \
+        --password "$AIRFLOW_PASSWORD"
+
+    echo "Airflow user created successfully."
+}
+
 # Main setup process
 ensure_directories
 start_docker_containers
 configure_airflow
 init_airflow_db
+create_airflow_user
 
 echo "Airflow environment setup complete!"
