@@ -1,33 +1,29 @@
 from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
-from datetime import datetime, timedelta
+from airflow.operators.bash_operator import BashOperator
+from datetime import datetime
 
-# Default arguments for the tasks
+# Define the default_args dictionary to be used by the DAG
 default_args = {
     'owner': 'airflow',
+    'depends_on_past': False,
+    'start_date': datetime(2024, 12, 2),
     'retries': 1,
-    'retry_delay': timedelta(minutes=5),
-    'start_date': datetime(2024, 12, 1),
 }
 
-# Create the DAG object
+# Define the DAG
 dag = DAG(
-    'simple_python_dag',
+    'bash_operator_example',
     default_args=default_args,
-    description='A simple DAG with PythonOperator',
-    schedule_interval=timedelta(days=1),  # Run once a day
+    description='A simple BashOperator example',
+    schedule_interval=None,  # This can be set to a schedule if you need it
 )
 
-# Python function to be used in the PythonOperator
-def print_hello():
-    print("Hello, this is a test of the PythonOperator!")
-
-# Create the task
-python_task = PythonOperator(
-    task_id='python_task',
-    python_callable=print_hello,
+# Define the BashOperator task
+bash_task = BashOperator(
+    task_id='run_bash_command',
+    bash_command='echo "Hello from BashOperator!"',  # This is the bash command you want to run
     dag=dag,
 )
 
-# Task dependencies (in this case, no dependencies)
-python_task
+# Set task dependencies (if you have multiple tasks)
+bash_task
