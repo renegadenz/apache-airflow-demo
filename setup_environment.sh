@@ -16,26 +16,30 @@ ensure_directories() {
     mkdir -p "$DAGS_DIR" "$LOGS_DIR"
 }
 
-# Start up the Docker containers using docker-compose
-start_docker_containers() {
-    echo "Checking if docker-compose.yml exists..."
-    if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
-        echo "Error: docker-compose.yml not found!"
-        exit 1
-    fi
-
-    echo "Starting Airflow environment using Docker Compose..."
-    docker-compose up -d
+# Start the PostgreSQL container first
+start_postgres() {
+    echo "Starting PostgreSQL container..."
+    docker-compose up -d postgres
 }
 
-# Initialize the Airflow database
-init_airflow_db() {
-    echo "Checking if docker-compose.yml exists..."
-    if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
-        echo "Error: docker-compose.yml not found!"
-        exit 1
-    fi
+# Wait for PostgreSQL to be ready
+wait_for_postgres() {
+    echo "Waiting for PostgreSQL to be ready..."
+    until docker-compose exec postgres pg_isready -U airflow > /dev/null 2>&1; do
+        echo "Waiting for PostgreSQL..."
+        sleep 5
+    done
+    echo "PostgreSQL is ready!"
+}
 
+# Start the Airflow webserver container to ensure airflow.cfg is generated
+start_airflow_webserver() {
+    echo "Starting Airflow webserver container..."
+    docker-compose up -d airflow-webserver
+}
+
+# Run airflow db init in the airflow-webserver container
+init_airflow_db() {
     echo "Initializing the Airflow database..."
     docker-compose exec airflow-webserver airflow db init
 }
@@ -44,8 +48,10 @@ init_airflow_db() {
 configure_airflow() {
     echo "Configuring Airflow to resolve deprecation warning..."
 
-    # Ensure the correct section for sql_alchemy_conn in the [database] section
     AIRFLOW_CONFIG_PATH="/opt/airflow/airflow.cfg"
+
+    # Remove sql_alchemy_conn from the [core] section if present
+    sed -i '/^\[core\]/,/^\[database\]/s/^sql_alchemy_conn.*/# Removed from [core] section/;' "$AIRFLOW_CONFIG_PATH"
 
     # Add the sql_alchemy_conn option under [database] if not present
     if ! grep -q "sql_alchemy_conn" "$AIRFLOW_CONFIG_PATH"; then
@@ -59,7 +65,7 @@ create_airflow_user() {
     echo "Creating Airflow user with username '$AIRFLOW_USER' and password '$AIRFLOW_PASSWORD'..."
 
     # Run the airflow CLI to create the user
-    docker-compose exec airflow-webserver airflow users create \
+    docker-compose run --rm airflow-webserver airflow users create \
         --username "$AIRFLOW_USER" \
         --firstname "Airflow" \
         --lastname "Admin" \
@@ -70,11 +76,20 @@ create_airflow_user() {
     echo "Airflow user created successfully."
 }
 
+# Start the Airflow webserver and scheduler containers
+start_airflow_services() {
+    echo "Starting Airflow webserver and scheduler..."
+    docker-compose up -d airflow-webserver airflow-scheduler
+}
+
 # Main setup process
 ensure_directories
-start_docker_containers
-configure_airflow
+start_postgres
+wait_for_postgres
+start_airflow_webserver
 init_airflow_db
+configure_airflow
 create_airflow_user
+start_airflow_services
 
 echo "Airflow environment setup complete!"
