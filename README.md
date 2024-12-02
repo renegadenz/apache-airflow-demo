@@ -42,13 +42,14 @@ The setup_environment.sh script will set up your environment by creating necessa
 Make the setup script executable:
 
 ```
-chmod +x ./scripts/setup_environment.sh
+chmod +x ./setup_environment.sh
+chmod +x ./cleanup_environment.sh
 ```
 3. Run the Setup Script
 Execute the setup_environment.sh script to set up the Docker environment and start the services:
 
 ```
-./scripts/setup_environment.sh
+./setup_environment.sh
 ```
 This will:
 
@@ -70,7 +71,7 @@ You can add or modify DAGs at any time, and they will be picked up on the next s
 When you're done, you can stop and remove the containers with:
 
 ```
-docker-compose down
+./cleanup_environment.sh
 ```
 This will stop all running containers and remove them.
 
