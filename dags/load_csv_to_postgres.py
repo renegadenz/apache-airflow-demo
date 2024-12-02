@@ -22,8 +22,8 @@ dag = DAG(
     schedule_interval=None,  # Adjust to your desired schedule
 )
 
-# Path to the CSV file
-csv_file_path = '/tmp/sample_data.csv'
+# Path to the CSV file inside the container (mounted directory)
+csv_file_path = '/opt/airflow/data/sample_data.csv'
 
 # Function to read and load CSV data to PostgreSQL
 def load_csv_to_postgres():
